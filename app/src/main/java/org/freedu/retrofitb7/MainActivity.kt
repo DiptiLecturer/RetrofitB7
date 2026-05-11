@@ -1,5 +1,6 @@
 package org.freedu.retrofitb7
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -66,6 +67,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    @SuppressLint("ObsoleteSdkInt")
     fun isNetworkAvailable(context: Context): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
