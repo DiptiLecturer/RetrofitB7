@@ -3,6 +3,7 @@ package org.freedu.retrofitb7
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+//conversion Json to Gson To Kotlin Object
 object ApiClient {
     private const val BASE_URL = "https://fakestoreapi.com"
     val api: ApiService by lazy {

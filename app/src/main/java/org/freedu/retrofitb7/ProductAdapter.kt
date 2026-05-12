@@ -8,9 +8,8 @@ import com.bumptech.glide.Glide
 import org.freedu.retrofitb7.databinding.ProductItemBinding
 
 
-
-class ProductAdapter(private val list: List<Product>) :
-    RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
+//Adapter is the bridge between data source and view
+class ProductAdapter(private val list: List<Product>) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
 
     class ViewHolder(val binding: ProductItemBinding) :
         RecyclerView.ViewHolder(binding.root)
@@ -31,6 +30,7 @@ class ProductAdapter(private val list: List<Product>) :
         holder.binding.productTitle.text = product.title
         holder.binding.productPrice.text = "$" + product.price
 
+        //Load Image
         Glide.with(holder.itemView.context)
             .load(product.image)
             .into(holder.binding.productImage)

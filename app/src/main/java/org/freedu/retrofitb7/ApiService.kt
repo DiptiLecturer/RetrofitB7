@@ -6,7 +6,10 @@ import retrofit2.http.GET
 
 interface ApiService {
 
-    @GET("/products")
+    //HTTP Method
+    @GET("/products")//Just to show the data
     fun getProducts(): Call<List<Product>>
+
+    //Post,Put,Delete,Patch
 
 }
