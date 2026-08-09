@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.freedu.retrofitb7.databinding.ActivityMainBinding
+import org.koin.android.ext.android.inject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -18,6 +19,9 @@ import retrofit2.Response
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+
+    // Inject ApiService using Koin
+    private val apiService: ApiService by inject()
 
     override fun onCreate(@Suppress("UNUSED_PARAMETER") savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,19 +35,17 @@ class MainActivity : AppCompatActivity() {
         binding.fab.setOnClickListener {
             startActivity(Intent(this, MainActivity::class.java))
         }
-
     }
 
     private fun loadProducts() {
-
-
         if (!isNetworkAvailable(this)) {
             Toast.makeText(this, "No internet connection. Please check your network.", Toast.LENGTH_LONG).show()
             return
         }
 
         try {
-            ApiClient.api.getProducts().enqueue(object : Callback<List<Product>> {
+            // Using injected apiService instead of ApiClient.api
+            apiService.getProducts().enqueue(object : Callback<List<Product>> {
                 override fun onResponse(
                     call: Call<List<Product>>, response: Response<List<Product>>
                 ) {
@@ -51,20 +53,15 @@ class MainActivity : AppCompatActivity() {
                         val list = response.body() ?: emptyList()
                         binding.recyclerView.adapter = ProductAdapter(list)
                     }
-
                 }
+
                 override fun onFailure(call: Call<List<Product>>, t: Throwable) {
                     Toast.makeText(this@MainActivity, t.message, Toast.LENGTH_SHORT).show()
-
                 }
-
             })
         } catch (e: Exception) {
             Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
-
         }
-
-
     }
 
     @SuppressLint("ObsoleteSdkInt")
