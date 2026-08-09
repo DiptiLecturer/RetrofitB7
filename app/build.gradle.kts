@@ -59,5 +59,14 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("io.insert-koin:koin-android:3.5.3")
 
+    // Standard Kotlin Coroutines Core
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+
+    // Lifecycle + ViewModel Utilities (Provides lifecycleScope and repeatOnLifecycle)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
 
 }

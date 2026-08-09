@@ -1,9 +1,10 @@
 package org.freedu.retrofitb7
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 sealed class UiState<out T> {
@@ -14,14 +15,16 @@ sealed class UiState<out T> {
 
 class ProductViewModel(private val repository: ProductRepository) : ViewModel() {
 
-    private val _productsState = MutableLiveData<UiState<List<Product>>>()
-    val productsState: LiveData<UiState<List<Product>>> = _productsState
+    private val _productsState = MutableStateFlow<UiState<List<Product>>>(UiState.Loading)
+    val productsState: StateFlow<UiState<List<Product>>> = _productsState.asStateFlow()
+
+    init {
+        loadProducts()
+    }
 
     fun loadProducts() {
-        _productsState.value = UiState.Loading
-
-        // Launch coroutine bound to ViewModel's lifecycle
         viewModelScope.launch {
+            _productsState.value = UiState.Loading
             try {
                 val products = repository.fetchProducts()
                 _productsState.value = UiState.Success(products)
@@ -29,5 +32,10 @@ class ProductViewModel(private val repository: ProductRepository) : ViewModel() 
                 _productsState.value = UiState.Error(e.localizedMessage ?: "An unexpected error occurred")
             }
         }
+    }
+
+    // Explicitly used for pull-to-refresh & retry button
+    fun refreshProducts() {
+        loadProducts()
     }
 }

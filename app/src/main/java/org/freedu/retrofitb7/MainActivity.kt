@@ -2,25 +2,24 @@ package org.freedu.retrofitb7
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import kotlinx.coroutines.launch
 import org.freedu.retrofitb7.databinding.ActivityMainBinding
-import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-
-    // Inject ViewModel using Koin's viewModel() delegate
     private val viewModel: ProductViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,50 +27,68 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
 
+        setupListeners()
         setupObservers()
+    }
 
-        if (isNetworkAvailable(this)) {
-            viewModel.loadProducts()
-        } else {
-            Toast.makeText(this, "No internet connection.", Toast.LENGTH_LONG).show()
+    private fun setupListeners() {
+        // 1. Swipe-to-Refresh Gesture Listener
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            viewModel.refreshProducts()
         }
 
-        binding.fab.setOnClickListener {
-            startActivity(Intent(this, MainActivity::class.java))
+        // 2. Retry Button Click Listener
+        binding.btnRetry.setOnClickListener {
+            viewModel.refreshProducts()
         }
     }
 
     private fun setupObservers() {
-        // Observe UI states from ViewModel
-        viewModel.productsState.observe(this) { state ->
-            when (state) {
-                is UiState.Loading -> {
-                    // Show progress bar / loading state if available
-                }
-                is UiState.Success -> {
-                    binding.recyclerView.adapter = ProductAdapter(state.data)
-                }
-                is UiState.Error -> {
-                    Toast.makeText(this, state.message, Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.productsState.collect { state ->
+                    when (state) {
+                        is UiState.Loading -> {
+                            // Keep SwipeRefresh spinner visible, hide old error views
+                            binding.swipeRefreshLayout.isRefreshing = true
+                            binding.errorLayout.visibility = View.GONE
+                        }
+                        is UiState.Success -> {
+                            // Stop refresh animation & render items
+                            binding.swipeRefreshLayout.isRefreshing = false
+                            binding.errorLayout.visibility = View.GONE
+                            binding.recyclerView.visibility = View.VISIBLE
+                            binding.recyclerView.adapter = ProductAdapter(state.data)
+                        }
+                        is UiState.Error -> {
+                            // Stop refresh animation & display Error / Retry UI
+                            binding.swipeRefreshLayout.isRefreshing = false
+                            binding.recyclerView.visibility = View.GONE
+                            binding.errorLayout.visibility = View.VISIBLE
+                            binding.tvErrorMessage.text = state.message
+                        }
+                    }
                 }
             }
         }
     }
+}
+@SuppressLint("ObsoleteSdkInt")
+fun isNetworkAvailable(context: Context): Boolean {
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    @SuppressLint("ObsoleteSdkInt")
-    fun isNetworkAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return false
-            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-        } else {
-            val networkInfo = connectivityManager.activeNetworkInfo ?: return false
-            networkInfo.isConnected
-        }
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || activeNetwork.hasTransport(
+            NetworkCapabilities.TRANSPORT_CELLULAR
+        )
+    } else {
+        val networkInfo = connectivityManager.activeNetworkInfo ?: return false
+        networkInfo.isConnected
     }
 }
